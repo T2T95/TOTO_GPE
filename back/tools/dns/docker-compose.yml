@@ -1,0 +1,11 @@
+services:
+  dnsmasq:
+    image: jpillora/dnsmasq:latest
+    container_name: elhomeshield-dnsmasq
+    ports:
+      - "53:53/udp"
+      - "53:53/tcp"
+    volumes:
+      - ../../generated/dns/dnsmasq_blocklist.conf:/etc/dnsmasq.d/10-elhomeshield.conf:ro
+      - ./dnsmasq.conf:/etc/dnsmasq.conf:ro
+    restart: unless-stopped

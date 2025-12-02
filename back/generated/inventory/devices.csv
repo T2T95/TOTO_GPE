@@ -1,0 +1,8 @@
+ip,name,mac,state,iface,src
+172.23.96.24,,00:15:5D:68:3B:28,dynamique,172.23.96.1,arp-a
+192.168.1.60,Host-002.lan,EE:23:23:ED:17:F7,dynamique,192.168.1.198,arp-a
+192.168.1.89,Tab-A9-de-Zine.lan,B6:0E:E9:E0:F3:4B,dynamique,192.168.1.198,arp-a
+192.168.1.93,Host-003.lan,70:EE:50:97:62:46,dynamique,192.168.1.198,arp-a
+192.168.1.101,Host-001.lan,74:19:F8:DF:87:F4,dynamique,192.168.1.198,arp-a
+192.168.1.176,Host-005.lan,3E:05:89:1D:89:BD,dynamique,192.168.1.198,arp-a
+192.168.1.254,bbox.lan,94:98:8F:1E:BE:D5,dynamique,192.168.1.198,arp-a

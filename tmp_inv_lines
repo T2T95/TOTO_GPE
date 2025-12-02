@@ -1,0 +1,118 @@
+1	from pathlib import Path
+2	import platform
+3	from .services import (
+4	    ensure_inventory_storage,
+5	    scan_neighbors,
+6	    export_csv,
+7	    enrich_with_names,
+8	    smart_scan,
+9	    force_nmap_scan,
+10	)
+11	
+12	
+13	def _project_root() -> Path:
+14	    return Path(__file__).resolve().parents[4]
+15	
+16	
+17	def _pause() -> None:
+18	    input("Appuyez sur Entrée pour continuer...")
+19	
+20	
+21	def _menu() -> None:
+22	    print("=== Device Inventory ===")
+23	    print("1. Scanner (auto: arp-scan/nmap/fallback)")
+24	    print("2. Exporter en CSV")
+25	    print("3. Aide (rafraîchir ARP)")
+26	    print("4. Installer Nmap (Windows)")
+27	    print("5. Scanner (forcer Nmap)")
+28	    print("6. Retour")
+29	
+30	
+31	def _help_refresh_arp() -> None:
+32	    sysname = platform.system().lower()
+33	    print("Conseils pour rafraîchir l'ARP avant scan:")
+34	    if sysname.startswith("win"):
+35	        print("- Ouvrez une invite cmd/PowerShell en Admin si nécessaire.")
+36	        print("- Optionnel: pinguer votre sous-réseau: 'for /L %i in (1,1,254) do ping -n 1 192.168.1.%i' (adapter le préfixe)")
+37	    else:
+38	        print("- Optionnel: nmap -sn 192.168.1.0/24 (si nmap installé) ou 'for i in {1..254}; do ping -c1 -W1 192.168.1.$i; done'")
+39	
+40	
+41	def run_inventory_module() -> None:
+42	    root = _project_root()
+43	    ensure_inventory_storage(root)
+44	
+45	    while True:
+46	        print("\033[2J\033[H", end="")
+47	        _menu()
+48	        choice = input("Sélectionnez une option: ").strip()
+49	
+50	        if choice == "1":
+51	            rows = smart_scan(None)
+52	            try:
+53	                rows = enrich_with_names(rows, max_lookups=50)
+54	            except Exception:
+55	                pass
+56	            if not rows:
+57	                print("Aucun voisin détecté. Essayez d'actualiser l'ARP (option 3).")
+58	            else:
+59	                print(f"Appareils détectés: {len(rows)}")
+60	                for r in rows[:20]:
+61	                    name = r.get('name','')
+62	                    name_seg = f" {name}" if name else ""
+63	                    print(f"- {r['ip']:<15}{name_seg:<32} {r.get('mac','--'):<17}  {r.get('state',''):<10}  {r.get('iface','')}")
+64	                if len(rows) > 20:
+65	                    print(f"... et {len(rows)-20} de plus")
+66	            _pause()
+67	        elif choice == "2":
+68	            path = export_csv(root)
+69	            print(f"Exporté: {path}")
+70	            _pause()
+71	        elif choice == "3":
+72	            _help_refresh_arp()
+73	            _pause()
+74	        elif choice == "4":
+75	            _install_nmap_windows()
+76	            _pause()
+77	        elif choice == "5":
+78	            rows = force_nmap_scan()
+79	            try:
+80	                rows = enrich_with_names(rows, max_lookups=50)
+81	            except Exception:
+82	                pass
+83	            if not rows:
+84	                print("Aucun hôte via Nmap ou Nmap non disponible.")
+85	            else:
+86	                print(f"Appareils détectés (Nmap): {len(rows)}")
+87	                for r in rows[:20]:
+88	                    name = r.get('name','')
+89	                    name_seg = f" {name}" if name else ""
+90	                    print(f"- {r['ip']:<15}{name_seg:<32} {r.get('mac','--'):<17}  {r.get('state',''):<10}  {r.get('iface','')}")
+91	                if len(rows) > 20:
+92	                    print(f"... et {len(rows)-20} de plus")
+93	            _pause()
+94	        elif choice == "6":
+95	            return
+96	        else:
+97	            print("Choix invalide.")
+98	            _pause()
+99	
+100	
+101	def _install_nmap_windows() -> None:
+102	    import shutil, platform, subprocess
+103	    if not platform.system().lower().startswith("win"):
+104	        print("Option Windows uniquement.")
+105	        return
+106	    script = _project_root() / "tools" / "inventory" / "install_nmap_windows.ps1"
+107	    if not script.exists():
+108	        print(f"Script introuvable: {script}")
+109	        return
+110	    ps = shutil.which("powershell.exe") or shutil.which("powershell") or "powershell"
+111	    try:
+112	        code = subprocess.call([ps, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script)])
+113	        print(f"Installation Nmap terminée avec code {code}.")
+114	    except Exception as e:
+115	        print(f"Erreur: {e}")
+116	
+117	
+118	__all__ = ["run_inventory_module"]
